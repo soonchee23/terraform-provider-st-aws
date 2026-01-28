@@ -14,6 +14,8 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,11 +41,11 @@ type iamPermissionSetAttachmentResource struct {
 }
 
 type iamPermissionSetAttachmentResourceModel struct {
-	PermissionSetName      types.String                 `tfsdk:"permission_set_name"`
-	InstanceArn            types.String                 `tfsdk:"instance_arn"`
-	PermissionSetArn       types.String                 `tfsdk:"permission_set_arn"`
-	PolicyPath             types.String                 `tfsdk:"policy_path"`
-	AttachedPolicies       types.List                   `tfsdk:"attached_policies"`
+	PermissionSetName      types.String                    `tfsdk:"permission_set_name"`
+	InstanceArn            types.String                    `tfsdk:"instance_arn"`
+	PermissionSetArn       types.String                    `tfsdk:"permission_set_arn"`
+	PolicyPath             types.String                    `tfsdk:"policy_path"`
+	AttachedPolicies       types.List                      `tfsdk:"attached_policies"`
 	AttachedPoliciesDetail []*iamPermissionSetPolicyDetail `tfsdk:"attached_policies_detail"`
 	CombinedPolicesDetail  []*iamPermissionSetPolicyDetail `tfsdk:"combined_policies_detail"`
 }
@@ -85,6 +87,9 @@ func (r *iamPermissionSetAttachmentResource) Schema(_ context.Context, _ resourc
 				Description: "List of IAM policy.",
 				ElementType: types.StringType,
 				Required:    true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
 			},
 			"attached_policies_detail": schema.ListNestedAttribute{
 				Description: "A list of policies detail.",
