@@ -193,6 +193,11 @@ func fetchPoliciesHelper[T any](ctx context.Context, policiesName []string, getP
 		policyArn, policyVersionId, err := getPolicyArn(ctx, attachedPolicy)
 
 		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				notExistError = append(notExistError, err)
+				continue
+			}
+
 			unexpectedError = append(unexpectedError, err)
 			continue
 		}

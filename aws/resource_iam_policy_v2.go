@@ -986,9 +986,9 @@ func assigneeTypeOf(assignee *iamPolicyV2ResourceModel) (assigneeType string, as
 
 func addReadCombinedDiags(diags *diag.Diagnostics, assigneeName string, notFoundErrs, unexpectedErrs []error) {
 	addDiagnostics(
-		diags, "error",
-		fmt.Sprintf("[API ERROR] Failed to Read Combined Policies for %v: Policy Not Found!", assigneeName),
-		notFoundErrs, "",
+		diags, "warning",
+		fmt.Sprintf("[API WARNING] Failed to Read Attached Policies for %v: Policy Not Found!", assigneeName),
+		notFoundErrs, "The policy that will be used to combine policies had been removed on AWS, next apply with update will prompt error:",
 	)
 	addDiagnostics(
 		diags, "error",
