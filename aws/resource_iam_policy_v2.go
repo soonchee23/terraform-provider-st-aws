@@ -223,14 +223,6 @@ func (r *iamPolicyV2Resource) ModifyPlan(ctx context.Context, req resource.Modif
 			plan.PermissionSet.PolicyPath = types.StringValue("/") // The default policy path is "/".
 		}
 	}
-
-	// Applying a non-existent first policy should trigger an error to block the apply.
-	if !plan.AttachedPolicies.IsNull() && len(plan.AttachedPolicies.Elements()) > 0 {
-		notExistErrs, unexpectedErrs := r.readAttachedPolicy(ctx, plan)
-		if len(notExistErrs) > 0 || len(unexpectedErrs) > 0 {
-			addReadDiagsWithNotFoundError(&resp.Diagnostics, "AttachedPolicies", notExistErrs, unexpectedErrs)
-		}
-	}
 }
 
 func (r *iamPolicyV2Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -333,7 +325,7 @@ func (r *iamPolicyV2Resource) Read(ctx context.Context, req resource.ReadRequest
 	_, assigneeName := assigneeTypeOf(state)
 
 	readCombinedPolicyNotExistErr, readCombinedPolicyErr := r.readCombinedPolicy(ctx, state)
-	addReadDiagsWithNotFoundWarning(&resp.Diagnostics, assigneeName, readCombinedPolicyNotExistErr, readCombinedPolicyErr)
+	addReadDiagsWithNotFoundWarning(&resp.Diagnostics, assigneeName, readCombinedPolicyNotExistErr, readCombinedPolicyErr, "The combined policies may be deleted due to human mistake or API error, will trigger update to recreate the combined policy:")
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -349,7 +341,7 @@ func (r *iamPolicyV2Resource) Read(ctx context.Context, req resource.ReadRequest
 	// because there is no ways to get plan configuration in Read() function to
 	// indicate user had removed the non existed policies from the input.
 	readAttachedPolicyNotExistErr, readAttachedPolicyErr := r.readAttachedPolicy(ctx, state)
-	addReadDiagsWithNotFoundWarning(&resp.Diagnostics, assigneeName, readAttachedPolicyNotExistErr, readAttachedPolicyErr)
+	addReadDiagsWithNotFoundWarning(&resp.Diagnostics, assigneeName, readAttachedPolicyNotExistErr, readAttachedPolicyErr, "The policy that will be used to combine policies had been removed on AWS, next apply with update will prompt error:")
 
 	// Set state so that Terraform will trigger update if there are changes in state.
 	setStateDiags = resp.State.Set(ctx, &state)
@@ -988,11 +980,11 @@ func assigneeTypeOf(assignee *iamPolicyV2ResourceModel) (assigneeType string, as
 //   - Policies that are not found on AWS generate a WARNING instead of an ERROR, indicating that
 //     the policy has been removed externally and a future apply may fail.
 //   - Unexpected errors (e.g., API failures) still generate an ERROR.
-func addReadDiagsWithNotFoundWarning(diags *diag.Diagnostics, assigneeName string, notFoundErrs, unexpectedErrs []error) {
+func addReadDiagsWithNotFoundWarning(diags *diag.Diagnostics, assigneeName string, notFoundErrs, unexpectedErrs []error, warningDetail string,) {
 	addDiagnostics(
 		diags, "warning",
 		fmt.Sprintf("[API WARNING] Failed to Read Attached Policies for %v: Policy Not Found!", assigneeName),
-		notFoundErrs, "The policy that will be used to combine policies had been removed on AWS, next apply with update will prompt error:",
+		notFoundErrs, warningDetail,
 	)
 	addDiagnostics(
 		diags, "error",
