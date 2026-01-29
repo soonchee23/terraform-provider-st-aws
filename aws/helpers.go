@@ -47,10 +47,6 @@ func (p *policyV2Detail) GetName() string {
 	return p.PolicyName.ValueString()
 }
 
-func (p *iamPermissionSetPolicyDetail) GetName() string {
-	return p.PolicyName.ValueString()
-}
-
 func handleAPIError(err error) error {
 	var ae smithy.APIError
 
